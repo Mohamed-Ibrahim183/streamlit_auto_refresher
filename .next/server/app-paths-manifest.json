@@ -1,0 +1,7 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/api/refresh/[userId]/[appIndex]/route": "app/api/refresh/[userId]/[appIndex]/route.js",
+  "/login/page": "app/login/page.js",
+  "/api/user/me/route": "app/api/user/me/route.js"
+}
