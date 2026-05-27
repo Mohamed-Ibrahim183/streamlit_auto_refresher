@@ -36,29 +36,29 @@ export default function SignupPage() {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: 40 }}>
-      <div style={{ background: '#fff', borderRadius: 8, padding: 32, maxWidth: 420, width: '100%', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-        <h1 style={{ fontSize: '1.5rem', marginBottom: 4 }}>Create account</h1>
-        <p style={{ color: '#888', marginBottom: 24, fontSize: 14 }}>Register to keep your Streamlit apps alive</p>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 52px)', padding: 40 }}>
+      <div style={{ background: 'var(--bg-card)', borderRadius: 8, padding: 32, maxWidth: 420, width: '100%', boxShadow: 'var(--shadow)' }}>
+        <h1 style={{ fontSize: '1.5rem', marginBottom: 4, color: 'var(--text)' }}>Create account</h1>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: 24, fontSize: 14 }}>Register to keep your Streamlit apps alive</p>
         {error && <div style={{ background: '#f8d7da', color: '#721c24', padding: '10px 14px', borderRadius: 6, marginBottom: 16, fontSize: 13 }}>{error}</div>}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>Display Name</label>
-            <input name="name" required placeholder="My Name" style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14 }} />
+            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>Display Name</label>
+            <input name="name" required placeholder="My Name" style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 14, background: 'var(--bg)', color: 'var(--text)' }} />
           </div>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>Email (optional, for login)</label>
-            <input type="email" name="email" placeholder="email@example.com" style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14 }} />
+            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>Email (optional, for login)</label>
+            <input type="email" name="email" placeholder="email@example.com" style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 14, background: 'var(--bg)', color: 'var(--text)' }} />
           </div>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>Password</label>
-            <input type="password" name="password" required placeholder="Min 6 characters" minLength={6} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14 }} />
+            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>Password</label>
+            <input type="password" name="password" required placeholder="Min 6 characters" minLength={6} style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 14, background: 'var(--bg)', color: 'var(--text)' }} />
           </div>
           <button type="submit" disabled={loading} style={{ width: '100%', padding: '10px 20px', background: loading ? '#f08a8a' : '#ff4b4b', color: '#fff', border: 'none', borderRadius: 6, cursor: loading ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600 }}>
             {loading ? <><span className="spinner spinner-sm" />Creating...</> : 'Create Account'}
           </button>
         </form>
-        <div style={{ marginTop: 16, textAlign: 'center', fontSize: 13, color: '#888' }}>
+        <div style={{ marginTop: 16, textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)' }}>
           Already have an account? <Link href="/login" style={{ color: '#ff4b4b' }}>Sign in</Link>
         </div>
       </div>

@@ -1,2 +1,6 @@
 /Design.md
 /node_modules
+.env
+/.next/*
+/.next
+
