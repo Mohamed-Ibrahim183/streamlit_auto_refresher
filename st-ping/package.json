@@ -1,0 +1,21 @@
+{
+  "name": "st-ping",
+  "version": "1.0.0",
+  "description": "Keep your free-tier Streamlit apps alive — ping, watch, and manage app URLs from the CLI",
+  "bin": {
+    "st-ping": "cli.js"
+  },
+  "keywords": ["streamlit", "keep-alive", "ping", "hibernation"],
+  "files": [
+    "cli.js",
+    "lib/"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.0",
+    "puppeteer": "^25.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
