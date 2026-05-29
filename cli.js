@@ -1,6 +1,9 @@
 require('dotenv').config();
+const path = require('path');
 const axios = require('axios');
 const puppeteer = require('puppeteer');
+const { execSync } = require('child_process');
+const { CONFIG_FILE, addApp, deleteApp, getApps, getAppByIdentifier } = require('./lib/apps-file');
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -35,38 +38,76 @@ function padTo(str, len) {
 const COMMANDS = [
   {
     name: 'refresh',
-    args: '<url>',
-    desc: 'Ping a Streamlit app URL once to keep it alive',
+    args: '[name|url]',
+    desc: 'Refresh all saved apps from the config file, or a specific one',
     options: [],
     examples: [
+      '$ node cli.js refresh',
+      '$ node cli.js refresh "My App"',
       '$ node cli.js refresh https://myapp.streamlit.app',
     ],
   },
   {
-    name: 'watch',
-    args: '<url> <interval_sec>',
-    desc: 'Ping a URL repeatedly every N seconds',
-    options: [],
+    name: 'ping',
+    args: '<url|api_url> [options]',
+    desc: 'Ping a URL once, watch it repeatedly, or refresh via API server',
+    options: [
+      ['-w, --watch <sec>', 'Watch mode — ping the URL every N seconds'],
+      ['-u, --user <userId>', 'API server mode — refresh all apps for a user'],
+      ['-i, --index <n>', 'App index to refresh (requires -u)'],
+    ],
     examples: [
-      '$ node cli.js watch https://myapp.streamlit.app 300',
+      '$ node cli.js ping https://myapp.streamlit.app',
+      '$ node cli.js ping https://myapp.streamlit.app -w 300',
+      '$ node cli.js ping http://localhost:3000 -u myuser',
+      '$ node cli.js ping http://localhost:3000 -u myuser -i 0',
     ],
   },
   {
-    name: 'api-refresh',
-    args: '<api_url> <userId>',
-    desc: 'Call the API server to refresh all apps for a user',
-    options: [],
+    name: 'add',
+    args: '<url> [-n <name>]',
+    desc: 'Add a Streamlit app URL to the local config file',
+    options: [['-n, --name <name>', 'Friendly name for the app']],
     examples: [
-      '$ node cli.js api-refresh http://localhost:3000 myuser',
+      '$ node cli.js add https://myapp.streamlit.app',
+      '$ node cli.js add https://myapp.streamlit.app -n "My App"',
     ],
   },
   {
-    name: 'api-refresh-app',
-    args: '<api_url> <userId> <appIndex>',
-    desc: 'Call the API server to refresh a single app by index',
+    name: 'delete',
+    args: '<url|name>',
+    desc: 'Remove an app from the local config file by URL or name',
     options: [],
     examples: [
-      '$ node cli.js api-refresh-app http://localhost:3000 myuser 0',
+      '$ node cli.js delete https://myapp.streamlit.app',
+      '$ node cli.js delete "My App"',
+    ],
+  },
+  {
+    name: 'list',
+    args: '',
+    desc: 'List all apps saved in the local config file',
+    options: [],
+    examples: [
+      '$ node cli.js list',
+    ],
+  },
+  {
+    name: 'schedule',
+    args: '',
+    desc: 'Register a Windows scheduled task to refresh all apps at user logon',
+    options: [],
+    examples: [
+      '$ node cli.js schedule',
+    ],
+  },
+  {
+    name: 'unschedule',
+    args: '',
+    desc: 'Remove the Windows scheduled task created by "schedule"',
+    options: [],
+    examples: [
+      '$ node cli.js unschedule',
     ],
   },
 ];
@@ -163,69 +204,210 @@ async function refreshUrlFallback(url) {
   return true;
 }
 
-async function watchUrl(url, intervalSec) {
-  highlight(`── Watching ${url} every ${intervalSec}s ──`);
-  const intervalMs = intervalSec * 1000;
-  const refresh = () => refreshUrl(url);
-  await refresh();
-  setInterval(refresh, intervalMs);
+async function cmdPing(args) {
+  const target = args[1];
+  if (!target) {
+    await cmdRefresh(args);
+    return;
+  }
+
+  const watchIdx = args.indexOf('-w') !== -1 ? args.indexOf('-w') : args.indexOf('--watch');
+  const userIdx = args.indexOf('-u') !== -1 ? args.indexOf('-u') : args.indexOf('--user');
+  const indexIdx = args.indexOf('-i') !== -1 ? args.indexOf('-i') : args.indexOf('--index');
+
+  const userId = userIdx !== -1 ? args[userIdx + 1] : null;
+  const appIndex = indexIdx !== -1 ? args[indexIdx + 1] : null;
+  const watchSec = watchIdx !== -1 ? parseInt(args[watchIdx + 1], 10) : null;
+
+  if (userId) {
+    const baseUrl = target.replace(/\/+$/, '');
+    const ep = appIndex !== null
+      ? `${baseUrl}/${userId}/refresh/${appIndex}`
+      : `${baseUrl}/${userId}/refresh`;
+    try {
+      if (appIndex !== null) {
+        info(`Refreshing app ${appIndex} for ${userId}...`);
+      } else {
+        info(`Refreshing all apps for ${userId}...`);
+      }
+      const res = await axios.get(ep, { timeout: 60000 });
+      if (appIndex !== null) {
+        const app = res.data;
+        const icon = app.success ? `${GREEN}✔${RESET}` : `${RED}✖${RESET}`;
+        console.log(`  ${icon} ${app.name} — ${app.url}`);
+      } else {
+        const data = res.data;
+        const ok = data.apps.filter(a => a.success).length;
+        const fail = data.apps.filter(a => !a.success).length;
+        highlight(`── Refreshed ${data.apps.length} app(s): ${ok} OK, ${fail} failed ──`);
+        for (const app of data.apps) {
+          const icon = app.success ? `${GREEN}✔${RESET}` : `${RED}✖${RESET}`;
+          console.log(`  ${icon} ${app.name} — ${app.url}`);
+        }
+      }
+    } catch (err) {
+      error(`API request failed: ${err.message}`);
+      process.exit(1);
+    }
+    return;
+  }
+
+  if (watchSec) {
+    highlight(`── Watching ${target} every ${watchSec}s ──`);
+    const intervalMs = watchSec * 1000;
+    const refresh = () => refreshUrl(target);
+    await refresh();
+    setInterval(refresh, intervalMs);
+    return;
+  }
+
+  const ok = await refreshUrl(target);
+  process.exit(ok ? 0 : 1);
 }
 
-async function apiRefresh(apiBaseUrl, userId) {
-  const url = `${apiBaseUrl.replace(/\/+$/, '')}/${userId}/refresh`;
-  try {
-    info(`Refreshing all apps for ${userId}...`);
-    const res = await axios.get(url, { timeout: 60000 });
-    const data = res.data;
-    const ok = data.apps.filter(a => a.success).length;
-    const fail = data.apps.filter(a => !a.success).length;
-    highlight(`── Refreshed ${data.apps.length} app(s): ${ok} OK, ${fail} failed ──`);
-    for (const app of data.apps) {
-      const icon = app.success ? `${GREEN}✔${RESET}` : `${RED}✖${RESET}`;
-      console.log(`  ${icon} ${app.name} — ${app.url}`);
-    }
-  } catch (err) {
-    error(`Failed to refresh apps for ${userId}: ${err.message}`);
+async function cmdAdd(args) {
+  const url = args[1];
+  if (!url) { error('Missing argument: <url>'); printUsage(); process.exit(1); }
+  const nameIdx = args.indexOf('-n') !== -1 ? args.indexOf('-n') : args.indexOf('--name');
+  const name = nameIdx !== -1 ? args[nameIdx + 1] : null;
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    error('URL must start with http:// or https://');
+    process.exit(1);
+  }
+  const result = addApp(url, name);
+  if (result.success) {
+    success(`Added "${result.entry.name}" → ${result.entry.url}`);
+    info(`Config file: ${CONFIG_FILE}`);
+  } else {
+    warn(result.message);
+  }
+}
+
+async function cmdDelete(args) {
+  const identifier = args[1];
+  if (!identifier) { error('Missing argument: <url|name>'); printUsage(); process.exit(1); }
+  const result = deleteApp(identifier);
+  if (result.success) {
+    success(`Deleted "${result.entry.name}" → ${result.entry.url}`);
+  } else {
+    error(result.message);
     process.exit(1);
   }
 }
 
-async function apiRefreshApp(apiBaseUrl, userId, appIndex) {
-  const url = `${apiBaseUrl.replace(/\/+$/, '')}/${userId}/refresh/${appIndex}`;
+async function cmdList() {
+  const apps = getApps();
+  if (apps.length === 0) {
+    info('No apps saved. Use "add" to add one.');
+    return;
+  }
+  highlight(`── ${apps.length} app(s) saved ──`);
+  for (let i = 0; i < apps.length; i++) {
+    console.log(`  ${CYAN}${i + 1}${RESET}  ${BOLD}${apps[i].name}${RESET}  ${GRAY}${apps[i].url}${RESET}`);
+  }
+  info(`Config file: ${CONFIG_FILE}`);
+}
+
+async function cmdRefresh(args) {
+  const apps = getApps();
+  if (apps.length === 0) {
+    error('No apps saved. Use "add" to add apps first.');
+    process.exit(1);
+  }
+
+  const identifier = args[1];
+  let targets = apps;
+
+  if (identifier) {
+    const match = getAppByIdentifier(identifier);
+    if (!match) {
+      error(`No saved app matching: ${identifier}`);
+      process.exit(1);
+    }
+    targets = [match];
+    highlight(`── Refreshing "${match.name}" ──`);
+  } else {
+    highlight(`── Refreshing all ${apps.length} app(s) ──`);
+  }
+
+  let ok = 0;
+  for (const app of targets) {
+    try {
+      const result = await refreshUrl(app.url);
+      if (result) ok++;
+    } catch {
+      error(`Failed: ${app.name} — ${app.url}`);
+    }
+  }
+  highlight(`── Done: ${ok}/${targets.length} succeeded ──`);
+}
+
+async function cmdSchedule() {
+  const scriptPath = path.join(__dirname, 'cli.js');
+  const nodePath = process.execPath;
+  const taskName = 'StreamlitAutoRefresher';
+  const command = `"${nodePath}" "${scriptPath}" refresh`;
   try {
-    info(`Refreshing app ${appIndex} for ${userId}...`);
-    const res = await axios.get(url, { timeout: 60000 });
-    const app = res.data;
-    const icon = app.success ? `${GREEN}✔${RESET}` : `${RED}✖${RESET}`;
-    console.log(`  ${icon} ${app.name} — ${app.url}`);
+    execSync(`schtasks /create /tn "${taskName}" /tr "${command}" /sc onlogon /rl highest /f`, { stdio: 'pipe' });
+    success(`Scheduled task "${taskName}" created — refreshes all apps at user logon`);
   } catch (err) {
-    error(`Failed to refresh app ${appIndex} for ${userId}: ${err.message}`);
+    error(`Failed to create scheduled task: ${err.stderr ? err.stderr.toString().trim() : err.message}`);
+    process.exit(1);
+  }
+}
+
+async function cmdUnschedule() {
+  const taskName = 'StreamlitAutoRefresher';
+  try {
+    execSync(`schtasks /delete /tn "${taskName}" /f`, { stdio: 'pipe' });
+    success(`Scheduled task "${taskName}" removed`);
+  } catch (err) {
+    error(`Failed to remove scheduled task: ${err.stderr ? err.stderr.toString().trim() : err.message}`);
     process.exit(1);
   }
 }
 
 (async () => {
   switch (command) {
-    case 'refresh': {
-      if (!args[1]) { error('Missing argument: <url>'); printUsage(); process.exit(1); }
-      const ok = await refreshUrl(args[1]);
-      process.exit(ok ? 0 : 1);
-    }
-
-    case 'watch':
-      if (!args[1] || !args[2]) { error('Missing arguments: <url> <interval_sec>'); printUsage(); process.exit(1); }
-      watchUrl(args[1], parseInt(args[2], 10));
+    case 'refresh':
+      if (!args[1]) {
+        await cmdRefresh(args);
+        process.exit(0);
+      } else if (args[1].startsWith('http://') || args[1].startsWith('https://')) {
+        const ok = await refreshUrl(args[1]);
+        process.exit(ok ? 0 : 1);
+      } else {
+        await cmdRefresh(args);
+        process.exit(0);
+      }
       break;
 
-    case 'api-refresh':
-      if (!args[1] || !args[2]) { error('Missing arguments: <api_url> <userId>'); printUsage(); process.exit(1); }
-      await apiRefresh(args[1], args[2]);
+    case 'ping':
+      await cmdPing(args);
+      break;
+
+    case 'add':
+      await cmdAdd(args);
       process.exit(0);
       break;
 
-    case 'api-refresh-app':
-      if (!args[1] || !args[2] || !args[3]) { error('Missing arguments: <api_url> <userId> <appIndex>'); printUsage(); process.exit(1); }
-      await apiRefreshApp(args[1], args[2], args[3]);
+    case 'delete':
+      await cmdDelete(args);
+      process.exit(0);
+      break;
+
+    case 'list':
+      await cmdList();
+      process.exit(0);
+      break;
+
+    case 'schedule':
+      await cmdSchedule();
+      process.exit(0);
+      break;
+
+    case 'unschedule':
+      await cmdUnschedule();
       process.exit(0);
       break;
 
