@@ -1,11 +1,16 @@
 {
   "name": "st-refresher",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Keep your free-tier Streamlit apps alive — ping, watch, and manage app URLs from the CLI",
   "bin": {
     "st-refresher": "cli.js"
   },
-  "keywords": ["streamlit", "keep-alive", "ping", "hibernation"],
+  "keywords": [
+    "streamlit",
+    "keep-alive",
+    "ping",
+    "hibernation"
+  ],
   "files": [
     "cli.js",
     "lib/"
