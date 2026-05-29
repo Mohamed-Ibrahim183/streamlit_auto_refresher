@@ -1,6 +1,6 @@
 {
   "name": "streamlit-auto-refresher",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Auto-refresh Streamlit apps to prevent free-tier hibernation",
   "scripts": {
     "dev": "next dev",
