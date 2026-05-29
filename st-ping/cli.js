@@ -137,7 +137,7 @@ function generateHelp() {
     }
     lines.push('');
   }
-  lines.push(`${DIM}${BLUE}Repository: https://github.com/your-repo/st-refresher${RESET}`);
+  lines.push(`${DIM}${BLUE}Repository: https://github.com/Mohamed-Ibrahim183/streamlit_auto_refresher${RESET}`);
   return lines.join('\n');
 }
 

@@ -1,6 +1,6 @@
 # st-refresher
 
-Keep your free-tier Streamlit apps alive — no web UI needed.
+Keep your free-tier Streamlit apps alive — CLI tool for refreshing sleeping Streamlit apps.
 
 ```bash
 npm install -g st-refresher
