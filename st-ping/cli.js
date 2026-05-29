@@ -42,9 +42,9 @@ const COMMANDS = [
     desc: 'Refresh all saved apps from the config file, or a specific one',
     options: [],
     examples: [
-      '$ st-ping refresh',
-      '$ st-ping refresh "My App"',
-      '$ st-ping refresh https://myapp.streamlit.app',
+      '$ st-refresher refresh',
+      '$ st-refresher refresh "My App"',
+      '$ st-refresher refresh https://myapp.streamlit.app',
     ],
   },
   {
@@ -57,10 +57,10 @@ const COMMANDS = [
       ['-i, --index <n>', 'App index to refresh (requires -u)'],
     ],
     examples: [
-      '$ st-ping ping https://myapp.streamlit.app',
-      '$ st-ping ping https://myapp.streamlit.app -w 300',
-      '$ st-ping ping http://localhost:3000 -u myuser',
-      '$ st-ping ping http://localhost:3000 -u myuser -i 0',
+      '$ st-refresher ping https://myapp.streamlit.app',
+      '$ st-refresher ping https://myapp.streamlit.app -w 300',
+      '$ st-refresher ping http://localhost:3000 -u myuser',
+      '$ st-refresher ping http://localhost:3000 -u myuser -i 0',
     ],
   },
   {
@@ -69,8 +69,8 @@ const COMMANDS = [
     desc: 'Add a Streamlit app URL to the local config file',
     options: [['-n, --name <name>', 'Friendly name for the app']],
     examples: [
-      '$ st-ping add https://myapp.streamlit.app',
-      '$ st-ping add https://myapp.streamlit.app -n "My App"',
+      '$ st-refresher add https://myapp.streamlit.app',
+      '$ st-refresher add https://myapp.streamlit.app -n "My App"',
     ],
   },
   {
@@ -79,8 +79,8 @@ const COMMANDS = [
     desc: 'Remove an app from the local config file by URL or name',
     options: [],
     examples: [
-      '$ st-ping delete https://myapp.streamlit.app',
-      '$ st-ping delete "My App"',
+      '$ st-refresher delete https://myapp.streamlit.app',
+      '$ st-refresher delete "My App"',
     ],
   },
   {
@@ -89,7 +89,7 @@ const COMMANDS = [
     desc: 'List all apps saved in the local config file',
     options: [],
     examples: [
-      '$ st-ping list',
+      '$ st-refresher list',
     ],
   },
   {
@@ -98,7 +98,7 @@ const COMMANDS = [
     desc: 'Register a Windows scheduled task to refresh all apps at user logon',
     options: [],
     examples: [
-      '$ st-ping schedule',
+      '$ st-refresher schedule',
     ],
   },
   {
@@ -107,16 +107,16 @@ const COMMANDS = [
     desc: 'Remove the Windows scheduled task created by "schedule"',
     options: [],
     examples: [
-      '$ st-ping unschedule',
+      '$ st-refresher unschedule',
     ],
   },
 ];
 
 function generateHelp() {
   const lines = [];
-  lines.push(`${CYAN}st-ping${RESET} ${DIM}\u2014 Keep your free-tier Streamlit apps alive${RESET}`);
+  lines.push(`${CYAN}st-refresher${RESET} ${DIM}\u2014 Keep your free-tier Streamlit apps alive${RESET}`);
   lines.push('');
-  lines.push(`${BOLD}Usage:${RESET} st-ping <command> [options]`);
+  lines.push(`${BOLD}Usage:${RESET} st-refresher <command> [options]`);
   lines.push('');
   lines.push(`${BOLD}Commands:${RESET}`);
   lines.push('');
@@ -137,7 +137,7 @@ function generateHelp() {
     }
     lines.push('');
   }
-  lines.push(`${DIM}${BLUE}Repository: https://github.com/your-repo/st-ping${RESET}`);
+  lines.push(`${DIM}${BLUE}Repository: https://github.com/your-repo/st-refresher${RESET}`);
   return lines.join('\n');
 }
 
@@ -345,7 +345,7 @@ async function cmdRefresh(args) {
 async function cmdSchedule() {
   const scriptPath = path.join(__dirname, 'cli.js');
   const nodePath = process.execPath;
-  const taskName = 'st-ping-refresh';
+  const taskName = 'st-refresher-refresh';
   const command = `"${nodePath}" "${scriptPath}" refresh`;
   try {
     execSync(`schtasks /create /tn "${taskName}" /tr "${command}" /sc onlogon /rl highest /f`, { stdio: 'pipe' });
@@ -357,7 +357,7 @@ async function cmdSchedule() {
 }
 
 async function cmdUnschedule() {
-  const taskName = 'st-ping-refresh';
+  const taskName = 'st-refresher-refresh';
   try {
     execSync(`schtasks /delete /tn "${taskName}" /f`, { stdio: 'pipe' });
     success(`Scheduled task "${taskName}" removed`);

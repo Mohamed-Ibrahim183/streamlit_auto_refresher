@@ -1,9 +1,9 @@
-# st-ping
+# st-refresher
 
 Keep your free-tier Streamlit apps alive — no web UI needed.
 
 ```bash
-npm install -g st-ping
+npm install -g st-refresher
 ```
 
 ## Commands
@@ -13,11 +13,11 @@ npm install -g st-ping
 Ping a Streamlit URL once, watch it, or call an API server.
 
 ```bash
-st-ping ping https://myapp.streamlit.app         # ping once
-st-ping ping https://myapp.streamlit.app -w 300   # watch every 300s
-st-ping ping http://localhost:3000 -u myuser      # refresh all via API
-st-ping ping http://localhost:3000 -u myuser -i 0 # refresh app 0 via API
-st-ping ping                                     # refresh all saved apps
+st-refresher ping https://myapp.streamlit.app         # ping once
+st-refresher ping https://myapp.streamlit.app -w 300   # watch every 300s
+st-refresher ping http://localhost:3000 -u myuser      # refresh all via API
+st-refresher ping http://localhost:3000 -u myuser -i 0 # refresh app 0 via API
+st-refresher ping                                     # refresh all saved apps
 ```
 
 ### `add` / `delete` / `list`
@@ -25,10 +25,10 @@ st-ping ping                                     # refresh all saved apps
 Manage apps in the local config file (`~/.streamlit-auto-refresher`).
 
 ```bash
-st-ping add https://myapp.streamlit.app -n "My App"
-st-ping list
-st-ping delete "My App"
-st-ping delete https://myapp.streamlit.app
+st-refresher add https://myapp.streamlit.app -n "My App"
+st-refresher list
+st-refresher delete "My App"
+st-refresher delete https://myapp.streamlit.app
 ```
 
 ### `refresh`
@@ -36,17 +36,17 @@ st-ping delete https://myapp.streamlit.app
 Refresh saved apps from the config file.
 
 ```bash
-st-ping refresh          # refresh all
-st-ping refresh "My App" # refresh one by name
+st-refresher refresh          # refresh all
+st-refresher refresh "My App" # refresh one by name
 ```
 
 ### `schedule` / `unschedule`
 
-Windows Task Scheduler integration — runs `st-ping refresh` at user logon.
+Windows Task Scheduler integration — runs `st-refresher refresh` at user logon.
 
 ```bash
-st-ping schedule
-st-ping unschedule
+st-refresher schedule
+st-refresher unschedule
 ```
 
 ## How it works
